@@ -1,11 +1,17 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import CodeEditor from './CodeEditor';
 
 export default function QuizQuestion({ question, onNext, onPrevious, isFirst, isLast }) {
   const [userCode, setUserCode] = useState(question.starterCode || '');
   const [showAnswer, setShowAnswer] = useState(false);
   const [showHint, setShowHint] = useState(false);
+
+  useEffect(() => {
+    setUserCode(question.starterCode || '');
+    setShowAnswer(false);
+    setShowHint(false);
+  }, [question.id, question.starterCode]);
 
   const handleReset = () => {
     setUserCode(question.starterCode || '');

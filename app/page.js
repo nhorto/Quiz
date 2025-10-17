@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { questions } from '@/data/questions';
 import QuizQuestion from '@/components/QuizQuestion';
 import Sidebar from '@/components/Sidebar';
@@ -7,11 +7,32 @@ import Sidebar from '@/components/Sidebar';
 export default function Home() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const currentQuestion = questions[currentQuestionIndex];
+  const filteredQuestions = useMemo(() => {
+    return questions.filter((question) => {
+      const matchesDifficulty =
+        selectedDifficulty === 'all' || question.difficulty === selectedDifficulty;
+      const matchesCategory =
+        selectedCategory === 'all' || question.category === selectedCategory;
+      return matchesDifficulty && matchesCategory;
+    });
+  }, [selectedCategory, selectedDifficulty]);
+
+  useEffect(() => {
+    setCurrentQuestionIndex(0);
+  }, [selectedDifficulty, selectedCategory]);
+
+  useEffect(() => {
+    if (currentQuestionIndex >= filteredQuestions.length && filteredQuestions.length) {
+      setCurrentQuestionIndex(0);
+    }
+  }, [currentQuestionIndex, filteredQuestions.length]);
+
+  const currentQuestion = filteredQuestions[currentQuestionIndex];
 
   const handleNext = () => {
-    if (currentQuestionIndex < questions.length - 1) {
+    if (currentQuestionIndex < filteredQuestions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
   };
@@ -22,14 +43,12 @@ export default function Home() {
     }
   };
 
-  const handleQuestionSelect = (index) => {
-    setCurrentQuestionIndex(index);
-  };
-
   const handleDifficultyChange = (difficulty) => {
     setSelectedDifficulty(difficulty);
-    // Reset to first question when filtering
-    setCurrentQuestionIndex(0);
+  };
+
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category);
   };
 
   return (
@@ -37,11 +56,14 @@ export default function Home() {
       {/* Sidebar */}
       <div className="w-80 flex-shrink-0">
         <Sidebar
-          questions={questions}
+          allQuestions={questions}
+          filteredQuestions={filteredQuestions}
           currentIndex={currentQuestionIndex}
-          onQuestionSelect={handleQuestionSelect}
+          onQuestionSelect={setCurrentQuestionIndex}
           selectedDifficulty={selectedDifficulty}
           onDifficultyChange={handleDifficultyChange}
+          selectedCategory={selectedCategory}
+          onCategoryChange={handleCategoryChange}
         />
       </div>
 
@@ -53,18 +75,29 @@ export default function Home() {
             Learn Next.js & React
           </h1>
           <p className="text-lg text-gray-600">
-            Practice with real patterns from the Holistic Bravo codebase
+            Practice with real patterns from production applications. 
           </p>
         </header>
 
         {/* Quiz Question */}
-        <QuizQuestion
-          question={currentQuestion}
-          onNext={handleNext}
-          onPrevious={handlePrevious}
-          isFirst={currentQuestionIndex === 0}
-          isLast={currentQuestionIndex === questions.length - 1}
-        />
+        {currentQuestion ? (
+          <QuizQuestion
+            question={currentQuestion}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            isFirst={currentQuestionIndex === 0}
+            isLast={currentQuestionIndex === filteredQuestions.length - 1}
+          />
+        ) : (
+          <div className="mx-auto max-w-3xl rounded-lg border border-dashed border-gray-300 bg-white p-10 text-center text-gray-600">
+            <p className="text-lg font-semibold">
+              No questions match the selected filters yet.
+            </p>
+            <p className="mt-2 text-sm">
+              Adjust the difficulty or category filters in the sidebar to continue practicing.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
